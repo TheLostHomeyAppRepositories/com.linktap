@@ -112,5 +112,8 @@
     },
     "1.0.25": {
         "en": "Revert to previous watering plan when Instant mode stopped manually."
-    }
+    },
+	"1.0.26": {
+		"en": "Fix exception when setting capability options for 'Total water used'."
+	}
 }

@@ -69,7 +69,7 @@ class LinkTapDevice extends Homey.Device
 
         const dd = this.getData();
         this.homey.app.registerHomeyWebhook(dd.gatewayId);
-        
+
         if (!this.hasCapability('onoff'))
         {
             await this.addCapabilityLog('onoff');
@@ -124,13 +124,13 @@ class LinkTapDevice extends Homey.Device
 
         if (this.hasCapability('meter_water.total'))
         {
-            if (this.getCapabilityOptions('meter_water.total').units !== 'm³')
+			let options = this.getCapabilityOptions('meter_water.total');
+			if (!options || !options.title || options.title !== this.homey.__('totalWaterUsed'))
             {
                 this.setCapabilityOptions('meter_water.total', {"title": "Total water used", 'units':'m³'});
                 this.waterTotal /= 1000;
                 this.setStoreValue('waterTotal', this.waterTotal);
                 this.setCapabilityValue('meter_water.total', this.waterTotal).catch(this.error);
-
             }
         }
 
@@ -271,7 +271,7 @@ class LinkTapDevice extends Homey.Device
                     await this.addCapabilityLog('alarm_fallen');
                     await this.setCapabilityValueLog('alarm_fallen', tapLinker.fall);
                 }
-    
+
                 if (!this.hasCapability('alarm_broken'))
                 {
                     await this.addCapabilityLog('alarm_broken');
@@ -324,12 +324,13 @@ class LinkTapDevice extends Homey.Device
             {
                 await this.addCapabilityLog('meter_water');
             }
-            
+
             if (!this.hasCapability('meter_water.total'))
             {
                 await this.addCapabilityLog('meter_water.total');
+				this.setCapabilityOptions('meter_water.total', { "title": "Total water used", 'units': 'm³' });
             }
-    
+
             if (!this.hasCapability('alarm_water'))
             {
                 await this.addCapabilityLog('alarm_water');
@@ -366,7 +367,7 @@ class LinkTapDevice extends Homey.Device
             {
                 await this.removeCapabilityLog('meter_water.total');
             }
-    
+
             if (this.hasCapability('alarm_high_flow'))
             {
                 await this.removeCapabilityLog('alarm_high_flow');
@@ -717,7 +718,7 @@ class LinkTapDevice extends Homey.Device
                         this.setCapabilityValueLog('time_remaining', message.onMin).catch(this.error);
                         this.activeTime++;
                     }
-                    
+
                     if (message.vol !== undefined)
                     {
                         let vol = message.vol / 1000;
@@ -744,7 +745,7 @@ class LinkTapDevice extends Homey.Device
                     this.setAvailable().catch(this.error);
                     this.setCapabilityValueLog('water_on', false).catch(this.error);
                     this.setCapabilityValueLog('time_remaining', 0).catch(this.error);
-    
+
                     if (this.timerVolUpdate)
                     {
                         this.homey.clearInterval(this.timerVolUpdate);
