@@ -124,10 +124,18 @@ class LinkTapDevice extends Homey.Device
 
         if (this.hasCapability('meter_water.total'))
         {
-			let options = this.getCapabilityOptions('meter_water.total');
+			let options = null;
+			try
+			{
+				options = this.getCapabilityOptions('meter_water.total');
+			}
+			catch (err)
+			{
+			}
+
 			if (!options || !options.title || options.title !== this.homey.__('totalWaterUsed'))
             {
-                this.setCapabilityOptions('meter_water.total', {"title": "Total water used", 'units':'m³'});
+                this.setCapabilityOptions('meter_water.total', { title: 'Total water used', units: 'm³' });
                 this.waterTotal /= 1000;
                 this.setStoreValue('waterTotal', this.waterTotal);
                 this.setCapabilityValue('meter_water.total', this.waterTotal).catch(this.error);
@@ -185,7 +193,7 @@ class LinkTapDevice extends Homey.Device
     updateDeviceValues()
     {
         this.__updateDeviceValues()
-            .then(success =>
+            .then((success) =>
             {
                 if (!success)
                 {
@@ -222,7 +230,7 @@ class LinkTapDevice extends Homey.Device
 
         try
         {
-            const gateway = devices.find(gateway => gateway.gatewayId === dd.gatewayId);
+            const gateway = devices.find((gateway) => gateway.gatewayId === dd.gatewayId);
 
             if (gateway.status !== 'Connected')
             {
@@ -232,7 +240,7 @@ class LinkTapDevice extends Homey.Device
             }
 
             const tapLinkers = gateway.taplinker;
-            const tapLinker = tapLinkers.find(tapLinkerEntry => tapLinkerEntry.taplinkerId === dd.id);
+            const tapLinker = tapLinkers.find((tapLinkerEntry) => tapLinkerEntry.taplinkerId === dd.id);
             if (tapLinker === undefined)
             {
                 this.homey.app.updateLog(`updateDeviceValues (${dd.id}) Device not found in gateway`);
@@ -279,12 +287,10 @@ class LinkTapDevice extends Homey.Device
                 }
             }
             else
-            {
-                if (this.hasCapability('alarm_fallen'))
+            if (this.hasCapability('alarm_fallen'))
                 {
                     await this.removeCapabilityLog('alarm_fallen');
                 }
-            }
 
             // Some capabilities are only available when a flow meter is fitted.
             await this.setupFlowMeterCapabilities(tapLinker.flowMeterStatus);
@@ -328,7 +334,7 @@ class LinkTapDevice extends Homey.Device
             if (!this.hasCapability('meter_water.total'))
             {
                 await this.addCapabilityLog('meter_water.total');
-				this.setCapabilityOptions('meter_water.total', { "title": "Total water used", 'units': 'm³' });
+				this.setCapabilityOptions('meter_water.total', { title: 'Total water used', units: 'm³' });
             }
 
             if (!this.hasCapability('alarm_water'))
@@ -430,7 +436,7 @@ class LinkTapDevice extends Homey.Device
     {
         const body = {
             notify: true,
-            logType: "diag"
+            logType: 'diag',
         };
 
         this.homey.app.sendLog(body);
@@ -518,12 +524,12 @@ class LinkTapDevice extends Homey.Device
         {
             if (err.message === 'HTTPS Error - 400')
             {
-                let errMsg = this.homey.__('wateringModeUndefined.' + mode);
+                const errMsg = this.homey.__(`wateringModeUndefined.${mode}`);
                 throw (new Error(errMsg));
             }
             if (err.message === 'HTTPS Error - 404')
             {
-                let errMsg = this.homey.__('wateringModeNotSupported.' + mode);
+                const errMsg = this.homey.__(`wateringModeNotSupported.${mode}`);
                 throw (new Error(errMsg));
             }
             throw (new Error(err.message));
@@ -620,7 +626,7 @@ class LinkTapDevice extends Homey.Device
 
         this.setCapabilityValueLog('water_on', false).catch(this.error);
         this.setCapabilityValueLog('time_remaining', 0).catch(this.error);
-        //this.setCapabilityValueLog('time_elapsed', 0).catch(this.error);
+        // this.setCapabilityValueLog('time_elapsed', 0).catch(this.error);
 
         this.cycles = 0;
         this.setCapabilityValueLog('cycles_remaining', this.cycles).catch(this.error);
@@ -652,7 +658,7 @@ class LinkTapDevice extends Homey.Device
             if ((dd.id === message.deviceId) && (dd.gatewayId === message.gatewayId))
             {
                 // message is for this device
-                let event = message.event ? message.event : message.msg;
+                const event = message.event ? message.event : message.msg;
 
                 this.homey.app.updateLog(`processWebhookMessage ${event}`);
 
@@ -721,7 +727,7 @@ class LinkTapDevice extends Homey.Device
 
                     if (message.vol !== undefined)
                     {
-                        let vol = message.vol / 1000;
+                        const vol = message.vol / 1000;
                         this.setCapabilityValueLog('meter_water', vol).catch(this.error);
                         this.setCapabilityValueLog('meter_water.total', this.waterTotal + (vol / 1000)).catch(this.error);
 
@@ -754,7 +760,7 @@ class LinkTapDevice extends Homey.Device
 
                     if (message.vol !== undefined)
                     {
-                        let vol = message.vol / 1000;
+                        const vol = message.vol / 1000;
                         this.setCapabilityValueLog('meter_water', vol).catch(this.error);
                         this.setCapabilityValueLog('meter_water.total', this.waterTotal + (vol / 1000)).catch(this.error);
 
@@ -811,7 +817,7 @@ class LinkTapDevice extends Homey.Device
                     const data = message.content.split(/[(,]+/);
                     if (data.length > 1)
                     {
-                        let vol = Number((data[1].split(' '))[0]);
+                        const vol = Number((data[1].split(' '))[0]);
                         this.setCapabilityValueLog('meter_water', vol).catch(this.error);
                         this.waterTotal += (vol / 1000);
                         this.setStoreValue('waterTotal', this.waterTotal);
@@ -907,7 +913,7 @@ class LinkTapDevice extends Homey.Device
                 }
             }
         }
-        catch(err)
+        catch (err)
         {
             this.homey.app.updateLog(`processWebhookMessage error ${err.message}`);
         }
@@ -920,7 +926,7 @@ class LinkTapDevice extends Homey.Device
         {
             await this.setCapabilityValue(capability, value);
         }
-        catch(err)
+        catch (err)
         {
             this.homey.app.updateLog(`setCapabilityValueLog error ${capability} ${err.message}`);
         }
@@ -933,7 +939,7 @@ class LinkTapDevice extends Homey.Device
         {
             await this.addCapability(capability);
         }
-        catch(err)
+        catch (err)
         {
             this.homey.app.updateLog(`addCapabilityLog error ${capability} ${err.message}`);
         }
@@ -946,7 +952,7 @@ class LinkTapDevice extends Homey.Device
         {
             await this.removeCapability(capability);
         }
-        catch(err)
+        catch (err)
         {
             this.homey.app.updateLog(`removeCapabilityLog error ${capability} ${err.message}`);
         }
