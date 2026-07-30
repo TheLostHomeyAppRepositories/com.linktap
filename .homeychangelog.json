@@ -133,5 +133,8 @@
 	},
 	"1.0.32": {
 		"en": "Try to fix issue with Water Meter reseting prematurely."
+    },
+    "1.0.33": {
+        "en": "Fix ECO cycle webhook handling so 'watering end' is treated as cycle end and plan finish is handled by 'wateringOff'. Improve water meter behaviour: plan volume now resets at start and increases across ECO cycles without dropping. Ensure total water used is accumulated and persisted so it never decreases."
 	}
 }
