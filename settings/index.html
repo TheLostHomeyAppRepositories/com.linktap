@@ -1,19 +1,13 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LinkTap Settings</title>
     <link rel="stylesheet" type="text/css" href="lwsa.css">
     <link rel="stylesheet" type="text/css" href="busy_indicator.css" />
     <style>
-        label.a {
-            display: inline-block;
-            width: 200px;
-            height: 15px;
-            padding: 5px;
-        }
-    </style>
-
-    <style type="text/css">
         .fog_div {
             display: none;
             position: fixed;
@@ -27,6 +21,43 @@
 
         #busybox.show {
             display: block;
+        }
+
+        .is-hidden {
+            display: none;
+        }
+
+        .sim-activate {
+            background-color: #0f9e16;
+            color: white;
+            margin: 5px 20px 5px 5px;
+        }
+
+        .sim-clear {
+            background-color: #a5510d;
+            color: white;
+            margin: 5px 20px 5px 5px;
+        }
+
+        #detectedDevices,
+        #diagLog,
+        #simData {
+            white-space: nowrap;
+        }
+
+        .settings-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .settings-note {
+            margin-top: 0;
+        }
+
+        .homey-form-select {
+            min-width: 220px;
         }
     </style>
 
@@ -43,48 +74,56 @@
 
     <!-- Tab links -->
     <div class="tab">
-        <button class="tablinks" onclick="setPage(event, 'detected')" id="defaultOpen"><span data-i18n="settings.detected"></span></button>
-        <button class="tablinks" onclick="setPage(event, 'log')"><span data-i18n="settings.diagnosticsLog"></span></button>
-        <button class="tablinks" onclick="setPage(event, 'simulator')" id="simLogTab" style="visibility:hidden">Simulation Data</button>
+        <button class="tablinks" onclick="setPage(event, 'detected')" id="defaultOpen" title="Detected devices"><span data-i18n="settings.detected"></span></button>
+        <button class="tablinks" onclick="setPage(event, 'log')" title="Diagnostics log"><span data-i18n="settings.diagnosticsLog"></span></button>
+        <button class="tablinks is-hidden" onclick="setPage(event, 'simulator')" id="simLogTab" title="Simulation Data">Simulation Data</button>
     </div>
 
     <!-- detected-->
     <div id="detected" class="tabcontent">
-        <fieldset>
-            <p><button id="sendDetectedLog"><span data-i18n="settings.sendLog"></span></button></p>
-            <p data-i18n="settings.detectedDescription">
+        <fieldset class="homey-form-fieldset">
+            <p class="settings-actions"><button id="sendDetectedLog" class="homey-button-small" title="Send detected devices"><span data-i18n="settings.sendLog"></span></button></p>
+            <p class="settings-note" data-i18n="settings.detectedDescription">
             </p>
             <div class="field row">
-                <textarea id="detectedDevices"></textarea>
+                <label class="homey-form-label" for="detectedDevices">Detected devices</label>
+                <textarea id="detectedDevices" class="homey-form-textarea" wrap="off" aria-label="Detected devices" title="Detected devices"></textarea>
             </div>
         </fieldset>
     </div>
 
     <!-- LOG PAGE -->
     <div id="log" class="tabcontent">
-        <fieldset>
-            <p data-i18n="settings.diagnosticsLog">
-            </p>
+        <fieldset class="homey-form-fieldset">
+            <p class="settings-note" data-i18n="settings.diagnosticsLog"></p>
+            <label class="homey-form-checkbox">
+                <input class="homey-form-checkbox-input" id="logEnabled" type="checkbox" value="logEnabled" aria-label="Enable diagnostics logging" title="Enable diagnostics logging" />
+                <span class="homey-form-checkbox-checkmark"></span>
+                <span class="homey-form-checkbox-text"><span data-i18n="settings.logEnabled"></span></span>
+            </label>
             <div class="field row">
-                <label for="logEnabled"><span data-i18n="settings.logEnabled"></span></label>
-                <input id="logEnabled" type="checkbox" value="logEnabled" />
+                <label class="homey-form-label" for="logFilter"><span data-i18n="settings.logFilterLabel"></span></label>
+                <select id="logFilter" class="homey-form-select" aria-label="Diagnostics log filter" title="Diagnostics log filter">
+                    <option value="all" data-i18n="settings.logFilterAll">All log entries</option>
+                    <option value="webhook" data-i18n="settings.logFilterWebhook">Webhook entries only</option>
+                </select>
             </div>
-        </fieldset>
-        <fieldset>
-            <p><button id="clearDiagLog"><span data-i18n="settings.clearLog"></span></button> <button id="sendDiagLog"><span data-i18n="settings.sendLog"></span></button></p>
+            <p class="settings-actions"><button id="clearDiagLog" class="homey-button-small" title="Clear diagnostics log"><span data-i18n="settings.clearLog"></span></button> <button id="sendDiagLog" class="homey-button-small" title="Send diagnostics log"><span data-i18n="settings.sendLog"></span></button></p>
             <div class="field row">
-                <textarea id="diagLog"></textarea>
+                <label class="homey-form-label" for="diagLog">Diagnostics log</label>
+                <textarea id="diagLog" class="homey-form-textarea" wrap="off" aria-label="Diagnostics log" title="Diagnostics log"></textarea>
             </div>
         </fieldset>
     </div>
 
     <!--SIMULATION PAGE -->
     <div id="simulator" class="tabcontent">
-        <fieldset>
+        <fieldset class="homey-form-fieldset">
             <h1>For debug use only</h1>
-            <p><button id="useSim" style="background-color:#0f9e16;color:white;margin:5px 20px 5px 5px;">Activate</button><button id="clearSim" style="background-color:#a5510d;color:white;margin:5px 20px 5px 5px;">Clear Sim</button></p>
+            <p class="settings-actions"><button id="useSim" class="sim-activate" title="Activate simulator">Activate</button><button id="clearSim" class="sim-clear" title="Clear simulator">Clear Sim</button></p>
             <div class="field row">
-                <textarea id="simData"></textarea>
+                <label class="homey-form-label" for="simData">Simulator data</label>
+                <textarea id="simData" class="homey-form-textarea" wrap="off" aria-label="Simulator data" title="Simulator data"></textarea>
             </div>
         </fieldset>
     </div>
@@ -96,10 +135,13 @@
         var detectedDevicesElement = document.getElementById('detectedDevices');
         var diagLogElement = document.getElementById('diagLog');
         var logEnabledElement = document.getElementById('logEnabled');
+        var logFilterElement = document.getElementById('logFilter');
 
         var clearLogElement = document.getElementById('clearDiagLog');
         var sendDiagLogElement = document.getElementById('sendDiagLog');
         var sendDetectedElement = document.getElementById('sendDetectedLog');
+
+        var rawDiagLog = "";
 
         // Simulation log tab
         var useSimElement = document.getElementById('useSim');
@@ -114,7 +156,7 @@
                 if (err) return Homey.alert(err);
                 if (debugMode)
                 {
-                    document.getElementById("simLogTab").style.visibility = 'visible';
+                    document.getElementById("simLogTab").classList.remove('is-hidden');
                 }
             });
 
@@ -122,7 +164,8 @@
 
             Homey.on('com.linktap.logupdated', function(data)
             {
-                diagLogElement.value = data.log;
+                rawDiagLog = data.log ? data.log : "";
+                renderDiagLog();
             });
 
             Homey.on('com.linktap.detectedDevicesUpdated', function(data)
@@ -136,6 +179,13 @@
                 logEnabledElement.checked = logEnabled;
             });
 
+            Homey.get('diagLogFilter', function(err, logFilter)
+            {
+                if (err) return Homey.alert(err);
+                logFilterElement.value = (logFilter === 'webhook') ? 'webhook' : 'all';
+                renderDiagLog();
+            });
+
             Homey.api('GET', '/getLog/',
             {
                 notify: true
@@ -147,7 +197,8 @@
                 }
                 else
                 {
-                    diagLogElement.value = result;
+                    rawDiagLog = result ? result : "";
+                    renderDiagLog();
                 }
             });
 
@@ -174,6 +225,15 @@
                 });
             });
 
+            logFilterElement.addEventListener('change', function(e)
+            {
+                Homey.set('diagLogFilter', logFilterElement.value, function(err)
+                {
+                    if (err) return Homey.alert(err);
+                    renderDiagLog();
+                });
+            });
+
             clearLogElement.addEventListener('click', function(e)
             {
                 Homey.api('POST', '/clearLog/',
@@ -187,7 +247,8 @@
                     }
                     else
                     {
-                        diagLogElement.value = "";
+                        rawDiagLog = "";
+                        renderDiagLog();
                     }
                 });
             });
@@ -320,13 +381,14 @@
 
                 // Make the log text area fill the page
                 diagLogElement.setAttribute('cols', diagLogElement.parentElement.clientWidth / 8);
-                diagLogElement.style.height = (window.innerHeight - diagLogElement.offsetTop - 20) + 'px';
+                diagLogElement.style.height = (window.innerHeight - diagLogElement.offsetTop - 60) + 'px';
+                renderDiagLog();
             }
             else if (tabPage == 'detected')
             {
                 // Make the detected devices text area fill the page
                 detectedDevicesElement.setAttribute('cols', detectedDevicesElement.parentElement.clientWidth / 8);
-                detectedDevicesElement.style.height = (window.innerHeight - detectedDevicesElement.offsetTop - 20) + 'px';
+                detectedDevicesElement.style.height = (window.innerHeight - detectedDevicesElement.offsetTop - 60) + 'px';
             }
             else if (tabPage == 'simulator')
             {
@@ -337,7 +399,7 @@
                 });
                 // Make the simulator text box fill the page
                 simDataElement.setAttribute('cols', simDataElement.parentElement.clientWidth / 8);
-                simDataElement.style.height = (window.innerHeight - simDataElement.offsetTop - 40) + 'px';
+                simDataElement.style.height = (window.innerHeight - simDataElement.offsetTop - 60) + 'px';
             }
         }
 
@@ -351,6 +413,60 @@
             {
                 busyi.hide();
             }
+        }
+
+        function renderDiagLog()
+        {
+            diagLogElement.value = getFilteredDiagLog(rawDiagLog);
+        }
+
+        function getFilteredDiagLog(logText)
+        {
+            if (logFilterElement.value !== 'webhook')
+            {
+                return logText;
+            }
+
+            var entries = splitDiagLogEntries(logText);
+            var filtered = entries.filter(function(entry)
+            {
+                return /web\s*hook/i.test(entry);
+            });
+
+            return filtered.join('');
+        }
+
+        function splitDiagLogEntries(logText)
+        {
+            if (!logText)
+            {
+                return [];
+            }
+
+            var source = logText;
+            if (source.indexOf('* ') !== 0)
+            {
+                source = source.replace(/^\s+/, '');
+            }
+
+            var parts = source.split(/\r?\n\* /);
+            var entries = [];
+            for (var i = 0; i < parts.length; i++)
+            {
+                if (!parts[i])
+                {
+                    continue;
+                }
+
+                var entry = '* ' + parts[i];
+                if (!/\r?\n$/.test(entry))
+                {
+                    entry += '\r\n';
+                }
+                entries.push(entry);
+            }
+
+            return entries;
         }
     </script>
 
