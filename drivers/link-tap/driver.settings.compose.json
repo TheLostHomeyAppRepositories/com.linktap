@@ -24,6 +24,22 @@
                 }
             },
             {
+                "id": "watering_volume_limit",
+                "type": "number",
+                "label": {
+                    "en": "Watering Volume Limit",
+                    "de": "Bewässerungsvolumenbegrenzung",
+                    "nl": "Bewateringsvolumelimiet"
+                },
+                "value": 0,
+                "units": "Litres",
+                "hint": {
+                    "en": "Stops manual mode when this volume is reached. Set to 0 to disable. Eco mode is ignored while this limit is active.",
+                    "de": "Beendet den manuellen Modus, wenn dieses Volumen erreicht ist. Auf 0 setzen zum Deaktivieren. Der Eco-Modus wird ignoriert, solange diese Begrenzung aktiv ist.",
+                    "nl": "Stopt de handmatige modus wanneer dit volume is bereikt. Zet op 0 om uit te schakelen. Eco-modus wordt genegeerd zolang deze limiet actief is."
+                }
+            },
+            {
                 "id": "eco_mode",
                 "type": "checkbox",
                 "label": {

@@ -16,6 +16,7 @@
         "missingPassword": "You need to enter your LinkTap Password"
     },
     "timeRemaining": "Time Remaining",
+    "totalWaterUsed": "Total water used",
     "timeActive": "Time Active",
     "gwOffline": "The Gateway is offline",
     "ltOffline": "The Valve is offline",

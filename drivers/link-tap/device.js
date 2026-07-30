@@ -13,6 +13,59 @@ class LinkTapDevice extends Homey.Device
         return Number.isFinite(num) ? num : undefined;
     }
 
+    getWateringVolumeLimitLitres()
+    {
+        const limit = this.toFiniteNumber(this.getSetting('watering_volume_limit'));
+        if (limit === undefined)
+        {
+            return 0;
+        }
+
+        return Math.max(0, limit);
+    }
+
+    isManualModeActive()
+    {
+        return this.getCapabilityValue('watering_mode') === 'M';
+    }
+
+    async stopManualModeForVolumeLimit(currentVolume, source)
+    {
+        const limit = this.getWateringVolumeLimitLitres();
+        if (limit <= 0)
+        {
+            return;
+        }
+
+        if (!this.isManualModeActive())
+        {
+            return;
+        }
+
+        if (!Number.isFinite(currentVolume) || (currentVolume < limit))
+        {
+            return;
+        }
+
+        if (this.volumeLimitStopPending)
+        {
+            return;
+        }
+
+        this.volumeLimitStopPending = true;
+        this.homey.app.updateLog(`stopManualModeForVolumeLimit (${source}) reached ${currentVolume}L (limit ${limit}L)`);
+
+        try
+        {
+            await this.activateInstantMode(false);
+        }
+        catch (err)
+        {
+            this.volumeLimitStopPending = false;
+            this.homey.app.updateLog(`stopManualModeForVolumeLimit failed: ${err.message}`, 0);
+        }
+    }
+
     async setAvailableLog(reason)
     {
         this.homey.app.updateLog(`setAvailable ${reason}`);
@@ -50,6 +103,9 @@ class LinkTapDevice extends Homey.Device
         this.previousWateringMode = null;
         this.gatewayOnlineGraceUntil = 0;
         this.lastFlowActivityAt = 0;
+        this.volumeLimitStopPending = false;
+        this.updateRetryTimer = null;
+        this.gatewayRecoveryTimer = null;
 
         this.onDeviceUpdateVol = this.onDeviceUpdateVol.bind(this);
         this.abortWatering = this.abortWatering.bind(this);
@@ -58,6 +114,7 @@ class LinkTapDevice extends Homey.Device
         this.apiKey = this.getStoreValue('apiKey');
         this.type = this.getStoreValue('type');
         this.waterTotal = this.getStoreValue('waterTotal');
+        this.totalWaterMigrationDone = this.getStoreValue('totalWaterMigrationDone') === true;
 
         this.volUnits = this.getSetting('volume_units');
         if (!this.waterTotal)
@@ -158,6 +215,7 @@ class LinkTapDevice extends Homey.Device
 
         if (this.hasCapability('meter_water.total'))
         {
+            const totalWaterTitle = this.homey.__('totalWaterUsed');
 			let options = null;
 			try
 			{
@@ -167,11 +225,19 @@ class LinkTapDevice extends Homey.Device
 			{
 			}
 
-			if (!options || !options.title || options.title !== this.homey.__('totalWaterUsed'))
+            if (!options || !options.title || options.title !== totalWaterTitle || options.units !== 'm³')
             {
-                this.setCapabilityOptions('meter_water.total', { title: 'Total water used', units: 'm³' });
-                this.waterTotal /= 1000;
-                this.setStoreValue('waterTotal', this.waterTotal);
+                this.setCapabilityOptions('meter_water.total', { title: totalWaterTitle, units: 'm³' });
+
+                // One-time migration from legacy litres storage to cubic metres.
+                if (!this.totalWaterMigrationDone)
+                {
+                    this.waterTotal /= 1000;
+                    this.setStoreValue('waterTotal', this.waterTotal);
+                    this.setStoreValue('totalWaterMigrationDone', true);
+                    this.totalWaterMigrationDone = true;
+                }
+
                 this.setCapabilityValue('meter_water.total', this.waterTotal).catch(this.error);
             }
         }
@@ -204,6 +270,12 @@ class LinkTapDevice extends Homey.Device
     async onSettings({ oldSettings, newSettings, changedKeys })
     {
         this.log('LinkTapDevice settings where changed');
+
+        if (changedKeys.includes('watering_volume_limit'))
+        {
+            const limit = this.getWateringVolumeLimitLitres();
+            this.homey.app.updateLog(`onSettings watering_volume_limit: ${limit}L`);
+        }
     }
 
     /**
@@ -224,8 +296,19 @@ class LinkTapDevice extends Homey.Device
         this.log('LinkTapDevice has been deleted');
     }
 
-    updateDeviceValues()
+    updateDeviceValues(forceRefresh = false)
     {
+        if (this.updateRetryTimer)
+        {
+            this.homey.clearTimeout(this.updateRetryTimer);
+            this.updateRetryTimer = null;
+        }
+
+        if (forceRefresh && this.homey.app.invalidateDeviceDataCache)
+        {
+            this.homey.app.invalidateDeviceDataCache('force refresh requested');
+        }
+
         this.__updateDeviceValues()
             .then((success) =>
             {
@@ -234,8 +317,9 @@ class LinkTapDevice extends Homey.Device
                     this.homey.app.updateLog('updateDeviceValues retry in 5 minutes');
 
                     // Try again after 5 minutes as it could be failing with the cached data
-                    this.homey.setTimeout(() =>
+                    this.updateRetryTimer = this.homey.setTimeout(() =>
                     {
+                        this.updateRetryTimer = null;
                         this.updateDeviceValues();
                     }, 1000 * 60 * 5);
                 }
@@ -335,20 +419,10 @@ class LinkTapDevice extends Homey.Device
             {
                 await this.setCapabilityValueLog('alarm_water', tapLinker.noWater);
                 await this.setCapabilityValueLog('measure_water', tapLinker.vel / 1000);
-                // Keep in-progress volume independent per device: do not reset
-                // meter_water while the valve is actively watering.
                 const localWatering = this.getCapabilityValue('watering') === true;
                 const localWaterOn = this.getCapabilityValue('water_on') === true;
                 const recentFlowActive = (Date.now() - this.lastFlowActivityAt) < (1000 * 120);
-                if ((tapLinker.watering !== true) && !localWatering && !localWaterOn && !recentFlowActive)
-                {
-                    this.homey.app.updateLog(`updateDeviceValues (${dd.id}) meter_water reset to 0 (not watering)`);
-                    await this.setCapabilityValueLog('meter_water', 0);
-                }
-                else
-                {
-                    this.homey.app.updateLog(`updateDeviceValues (${dd.id}) meter_water preserved (api watering: ${tapLinker.watering}, local watering: ${localWatering}, local water_on: ${localWaterOn}, recent flow: ${recentFlowActive}, current: ${this.getCapabilityValue('meter_water')})`);
-                }
+                this.homey.app.updateLog(`updateDeviceValues (${dd.id}) meter_water preserved (api watering: ${tapLinker.watering}, local watering: ${localWatering}, local water_on: ${localWaterOn}, recent flow: ${recentFlowActive}, current: ${this.getCapabilityValue('meter_water')})`);
                 await this.setCapabilityValueLog('alarm_high_flow', tapLinker.leakFlag);
                 await this.setCapabilityValueLog('alarm_low_flow', tapLinker.clogFlag);
             }
@@ -383,7 +457,8 @@ class LinkTapDevice extends Homey.Device
             if (!this.hasCapability('meter_water.total'))
             {
                 await this.addCapabilityLog('meter_water.total');
-				this.setCapabilityOptions('meter_water.total', { title: 'Total water used', units: 'm³' });
+				this.setCapabilityOptions('meter_water.total', { title: this.homey.__('totalWaterUsed'), units: 'm³' });
+				this.setCapabilityValueLog('meter_water.total', this.waterTotal).catch(this.error);
             }
 
             if (!this.hasCapability('alarm_water'))
@@ -606,6 +681,7 @@ class LinkTapDevice extends Homey.Device
         if (onOff)
         {
             body.action = true;
+            this.volumeLimitStopPending = false;
 
             if (!duration)
             {
@@ -614,7 +690,14 @@ class LinkTapDevice extends Homey.Device
 
             body.duration = duration;
 
-            if (ecoOption)
+            const volumeLimit = this.getWateringVolumeLimitLitres();
+            const useEcoMode = ecoOption && (volumeLimit <= 0);
+            if (ecoOption && !useEcoMode)
+            {
+                this.homey.app.updateLog(`activateInstantMode eco mode disabled because watering_volume_limit is active (${volumeLimit}L)`);
+            }
+
+            if (useEcoMode)
             {
                 if (ecoOn > duration)
                 {
@@ -648,6 +731,8 @@ class LinkTapDevice extends Homey.Device
         }
         else
         {
+            this.volumeLimitStopPending = false;
+
             // Cancel watering doesn't generate the 'watering end' webhook event when Eco mode is active so setup a backup to tidy up
             this.abortTimer = this.homey.setTimeout(() =>
             {
@@ -675,6 +760,7 @@ class LinkTapDevice extends Homey.Device
         }
 
         this.homey.app.updateLog('abortWatering');
+        this.volumeLimitStopPending = false;
 
         if (this.timerVolUpdate)
         {
@@ -751,6 +837,7 @@ class LinkTapDevice extends Homey.Device
         this.lastFlowActivityAt = Date.now();
         this.setCapabilityValue('meter_water', vol).catch(this.error);
         this.setCapabilityValue('meter_water.total', this.waterTotal + (vol / 1000)).catch(this.error);
+        this.stopManualModeForVolumeLimit(vol, 'flowUpdate').catch(this.error);
     }
 
     async processWebhookMessage(message)
@@ -775,6 +862,8 @@ class LinkTapDevice extends Homey.Device
                     // A watering plan has started or or manual mode was turned on
                     this.setAvailableLog('processWebhookMessage watering start').catch(this.error);
                     this.lastFlowActivityAt = Date.now();
+                    this.setCapabilityValueLog('meter_water', 0).catch(this.error);
+                    this.setCapabilityValueLog('measure_water', 0).catch(this.error);
 
                     if (message.workMode === 'M')
                     {
@@ -791,6 +880,7 @@ class LinkTapDevice extends Homey.Device
 
                     this.setCapabilityValueLog('onoff', true).catch(this.error);
                     this.setCapabilityValueLog('watering', true).catch(this.error);
+                    this.volumeLimitStopPending = false;
                     this.activeTime = 0;
                     this.setCapabilityValueLog('watering_mode', message.workMode);
                     this.driver.triggerWateringStarted(this);
@@ -800,6 +890,10 @@ class LinkTapDevice extends Homey.Device
                     // The water flow (valve) has turned on (also occurs about once per minute)
                     this.setAvailableLog('processWebhookMessage wateringOn').catch(this.error);
                     this.lastFlowActivityAt = Date.now();
+                    if (this.getCapabilityValue('watering') !== true)
+                    {
+                        this.setCapabilityValueLog('meter_water', 0).catch(this.error);
+                    }
                     this.setCapabilityValueLog('water_on', true).catch(this.error);
                     this.setCapabilityValueLog('watering', true).catch(this.error);
 
@@ -882,6 +976,8 @@ class LinkTapDevice extends Homey.Device
                             this.homey.clearInterval(this.timerVolUpdate);
                         }
                         this.timerVolUpdate = this.homey.setInterval(this.onDeviceUpdateVol, (1000 * 2));
+
+                        this.stopManualModeForVolumeLimit(vol, 'wateringOn').catch(this.error);
                     }
 
                     if (message.battery)
@@ -893,6 +989,7 @@ class LinkTapDevice extends Homey.Device
                 else if (event === 'wateringOff')
                 {
                     this.setAvailableLog('processWebhookMessage wateringOff').catch(this.error);
+                    this.volumeLimitStopPending = false;
                     this.setCapabilityValueLog('water_on', false).catch(this.error);
                     this.setCapabilityValueLog('time_remaining', 0).catch(this.error);
 
@@ -945,6 +1042,7 @@ class LinkTapDevice extends Homey.Device
                 else if (event === 'watering end')
                 {
                     this.setAvailableLog('processWebhookMessage watering end').catch(this.error);
+                    this.volumeLimitStopPending = false;
                     // The watering plan has ended or manual mode has been switched off
                     if (this.abortTimer)
                     {
@@ -994,7 +1092,16 @@ class LinkTapDevice extends Homey.Device
                     // gatewayOnline) are processed first. Without the delay our setAvailable() call would
                     // race against the incoming deviceOffline messages and lose. After 5 seconds the dust
                     // has settled and each device fetches its real status from the API.
-                    this.homey.setTimeout(() => this.updateDeviceValues(), 5000);
+                    if (this.gatewayRecoveryTimer)
+                    {
+                        this.homey.clearTimeout(this.gatewayRecoveryTimer);
+                    }
+
+                    this.gatewayRecoveryTimer = this.homey.setTimeout(() =>
+                    {
+                        this.gatewayRecoveryTimer = null;
+                        this.updateDeviceValues(true);
+                    }, 5000);
                 }
                 else if (event === 'gatewayOffline')
                 {
@@ -1014,6 +1121,7 @@ class LinkTapDevice extends Homey.Device
                 else if (event === 'deviceOnline')
                 {
                     await this.setAvailableLog('processWebhookMessage deviceOnline');
+                    this.updateDeviceValues(true);
                 }
                 else if (event === 'battery low alert')
                 {

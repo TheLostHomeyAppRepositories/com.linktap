@@ -16,6 +16,7 @@
         "missingPassword": "Sie müssen Ihr LinkTap Passwort eingeben"
     },
     "timeRemaining": "Verbleibende Zeit",
+    "totalWaterUsed": "Gesamter Wasserverbrauch",
     "timeActive": "Zeit aktiv",
     "gwOffline": "Das Gateway ist offline",
     "ltOffline": "Das Ventil ist offline",

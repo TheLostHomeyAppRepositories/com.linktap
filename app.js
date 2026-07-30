@@ -205,6 +205,18 @@ class MyApp extends Homey.App
         this.deleteLinkTapWebhook();
     }
 
+    invalidateDeviceDataCache(reason = '')
+    {
+        this.lastDetectionTime = 0;
+        this.cacheClean = false;
+        this.homey.settings.set('lastDetectionTime', this.lastDetectionTime);
+
+        if (reason)
+        {
+            this.updateLog(`invalidateDeviceDataCache ${reason}`);
+        }
+    }
+
     // The getAllDevices API can only be called once every 5 minutes so get the data from the cache if it was called less than 5 minutes ago
     // Set UseDirtyCache to true if just need a list of devices and the values are not important
     // Returns null if no new data or an error
