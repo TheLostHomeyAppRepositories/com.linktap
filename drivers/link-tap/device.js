@@ -445,11 +445,33 @@ class LinkTapDevice extends Homey.Device
 
             // Standard capabilities available to all device types
             await this.setCapabilityValueLog('watering_mode', tapLinker.workMode !== 'N' ? tapLinker.workMode : null);
-            this.setCapabilityValueLog('onoff', tapLinker.watering === true);
+
+            const apiWateringState = (tapLinker.watering === true)
+                ? true
+                : ((tapLinker.watering === false) ? false : null);
+            const localPlanActive = this.getCapabilityValue('watering') === true;
+            const localValveActive = this.getCapabilityValue('water_on') === true;
+            const ecoCyclePauseActive = (tapLinker.workMode === 'M')
+                && localPlanActive
+                && Number.isFinite(this.cycles)
+                && (this.cycles > 0)
+                && (apiWateringState === false);
+
+            const planActive = (apiWateringState === null)
+                ? localPlanActive
+                : (ecoCyclePauseActive ? true : apiWateringState);
+            const valveActive = (apiWateringState === null) ? localValveActive : (apiWateringState === true);
+
+            if (ecoCyclePauseActive)
+            {
+                this.homey.app.updateLog(`updateDeviceValues (${dd.id}) preserving onoff during instant ECO pause (cycles remaining: ${this.cycles})`);
+            }
+
+            this.setCapabilityValueLog('onoff', planActive);
             this.setCapabilityValueLog('measure_battery', parseInt(tapLinker.batteryStatus, 10));
             this.setCapabilityValueLog('alarm_freeze', false);
-            this.setCapabilityValueLog('watering', tapLinker.watering === true);
-            this.setCapabilityValueLog('water_on', tapLinker.watering === true);
+            this.setCapabilityValueLog('watering', planActive);
+            this.setCapabilityValueLog('water_on', valveActive);
 
             // Some capabilities are only available on G2 models
             if ((this.type === 5) || (this.type === 10))
@@ -975,6 +997,7 @@ class LinkTapDevice extends Homey.Device
                         this.setCapabilityValueLog('meter_water', 0).catch(this.error);
                     }
                     this.setCapabilityValueLog('water_on', true).catch(this.error);
+                    this.setCapabilityValueLog('onoff', true).catch(this.error);
                     this.setCapabilityValueLog('watering', true).catch(this.error);
 
                     if (message.ecoFlag === 1)
