@@ -359,7 +359,7 @@ class LinkTapDevice extends Homey.Device
         this.log('LinkTapDevice has been deleted');
     }
 
-    updateDeviceValues(forceRefresh = false)
+    async updateDeviceValues(forceRefresh = false)
     {
         if (this.updateRetryTimer)
         {
@@ -372,21 +372,20 @@ class LinkTapDevice extends Homey.Device
             this.homey.app.invalidateDeviceDataCache('force refresh requested');
         }
 
-        this.__updateDeviceValues()
-            .then((success) =>
-            {
-                if (!success)
-                {
-                    this.homey.app.updateLog('updateDeviceValues retry in 5 minutes');
+        const success = await this.__updateDeviceValues();
+        if (!success)
+        {
+            this.homey.app.updateLog('updateDeviceValues retry in 5 minutes');
 
-                    // Try again after 5 minutes as it could be failing with the cached data
-                    this.updateRetryTimer = this.homey.setTimeout(() =>
-                    {
-                        this.updateRetryTimer = null;
-                        this.updateDeviceValues();
-                    }, 1000 * 60 * 5);
-                }
-            });
+            // Try again after 5 minutes as it could be failing with the cached data
+            this.updateRetryTimer = this.homey.setTimeout(() =>
+            {
+                this.updateRetryTimer = null;
+                this.updateDeviceValues();
+            }, 1000 * 60 * 5);
+        }
+
+        return success;
     }
 
     async __updateDeviceValues()
@@ -445,7 +444,7 @@ class LinkTapDevice extends Homey.Device
             this.setStoreValue('type', this.type);
 
             // Standard capabilities available to all device types
-            this.setCapabilityValueLog('watering_mode', tapLinker.workMode !== 'N' ? tapLinker.workMode : null);
+            await this.setCapabilityValueLog('watering_mode', tapLinker.workMode !== 'N' ? tapLinker.workMode : null);
             this.setCapabilityValueLog('onoff', tapLinker.watering === true);
             this.setCapabilityValueLog('measure_battery', parseInt(tapLinker.batteryStatus, 10));
             this.setCapabilityValueLog('alarm_freeze', false);
@@ -863,33 +862,47 @@ class LinkTapDevice extends Homey.Device
 
     async restorePreviousWateringMode()
     {
-        // if (this.previousWateringMode)
-        // {
-        //     const mode = this.previousWateringMode;
-        //     this.previousWateringMode = null;
+        const mode = this.previousWateringMode;
 
-        //     // Re-activate the previously selected schedule mode on the device.
-        //     this.homey.app.updateLog(`restorePreviousWateringMode restoring: ${mode}`);
-        //     try
-        //     {
-        //         await this.activateWateringMode(mode);
-        //         this.homey.app.updateLog(`restorePreviousWateringMode success: ${mode}`);
-        //     }
-        //     catch (err)
-        //     {
-        //         this.homey.app.updateLog(`restorePreviousWateringMode failed: ${err.message}`, 0);
-        //     }
-        // }
-        // else
-        // {
-        //     this.homey.app.updateLog('restorePreviousWateringMode skipped: no previous mode stored');
-        // }
+        // Delay the API query so that all wateringOff messages are processed first.
+        this.homey.setTimeout(async () =>
+        {
+            const refreshSuccess = await this.updateDeviceValues(true);
+            if (!refreshSuccess)
+            {
+                this.homey.app.updateLog('restorePreviousWateringMode refresh failed');
+                return;
+            }
 
-		// Delay the API query so that all wateringOff messages are processed first. Without the delay our setAvailable() call would race against the incoming wateringOff messages and lose. After 5 seconds the dust has settled and the device fetches its real status from the API which will restore the correct mode.
-		this.homey.setTimeout(() =>
-		{
-			this.updateDeviceValues();
-		}, 1000 * 5);
+            if (!mode)
+            {
+                this.homey.app.updateLog('restorePreviousWateringMode skipped: no previous mode stored');
+                return;
+            }
+
+            const currentMode = this.getCapabilityValue('watering_mode');
+            if (currentMode === 'M')
+            {
+                // If the device is still in manual mode, explicitly restore the last schedule mode.
+                this.homey.app.updateLog(`restorePreviousWateringMode restoring: ${mode}`);
+                try
+                {
+                    await this.activateWateringMode(mode);
+                    this.homey.app.updateLog(`restorePreviousWateringMode success: ${mode}`);
+                }
+                catch (err)
+                {
+                    this.homey.app.updateLog(`restorePreviousWateringMode failed: ${err.message}`, 0);
+                    return;
+                }
+            }
+            else
+            {
+                this.homey.app.updateLog(`restorePreviousWateringMode not needed. Current mode: ${currentMode || 'unset'}`);
+            }
+
+            this.previousWateringMode = null;
+        }, 1000 * 5);
     }
 
     async onDeviceUpdateVol()
