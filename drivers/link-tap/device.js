@@ -176,6 +176,7 @@ class LinkTapDevice extends Homey.Device
         this.type = this.getStoreValue('type');
         this.waterTotal = this.getStoreValue('waterTotal');
         this.totalWaterMigrationDone = this.getStoreValue('totalWaterMigrationDone') === true;
+		this.setCapabilityValueLog('measure_water', 0).catch(this.error);
 
         this.volUnits = this.getSetting('volume_units');
         if (!this.waterTotal)
@@ -502,10 +503,17 @@ class LinkTapDevice extends Homey.Device
             if (tapLinker.flowMeterStatus === 'on')
             {
                 await this.setCapabilityValueLog('alarm_water', tapLinker.noWater);
-                await this.setCapabilityValueLog('measure_water', tapLinker.vel / 1000);
                 const localWatering = this.getCapabilityValue('watering') === true;
                 const localWaterOn = this.getCapabilityValue('water_on') === true;
                 const recentFlowActive = (Date.now() - this.lastFlowActivityAt) < (1000 * 120);
+                const flowRate = valveActive ? (tapLinker.vel / 1000) : 0;
+
+                if (!valveActive)
+                {
+                    this.homey.app.updateLog(`updateDeviceValues (${dd.id}) measure_water held at 0 because valve is off (api watering: ${tapLinker.watering}, local watering: ${localWatering}, local water_on: ${localWaterOn}, recent flow: ${recentFlowActive}, current: ${this.getCapabilityValue('measure_water')})`);
+                }
+
+                await this.setCapabilityValueLog('measure_water', flowRate);
                 this.homey.app.updateLog(`updateDeviceValues (${dd.id}) meter_water preserved (api watering: ${tapLinker.watering}, local watering: ${localWatering}, local water_on: ${localWaterOn}, recent flow: ${recentFlowActive}, current: ${this.getCapabilityValue('meter_water')})`);
                 await this.setCapabilityValueLog('alarm_high_flow', tapLinker.leakFlag);
                 await this.setCapabilityValueLog('alarm_low_flow', tapLinker.clogFlag);
@@ -1109,8 +1117,6 @@ class LinkTapDevice extends Homey.Device
                         const vol = message.vol / 1000;
                         this.updatePlanWaterUsed(vol, 'wateringOff');
                         this.updateTotalWaterUsed(vol, true, 'wateringOff');
-
-                        this.setCapabilityValueLog('measure_water', 0).catch(this.error);
                     }
                     else
                     {
