@@ -1,6 +1,6 @@
 {
     "name": "com.linktap",
-    "version": "1.0.33",
+    "version": "1.0.34",
     "main": "app.js",
     "repository": {
         "type": "git",

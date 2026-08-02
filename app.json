@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.linktap",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "compatibility": ">=5.0.0",
   "platforms": [
     "local",
@@ -422,9 +422,9 @@
           "nl": "Activeer instant modus"
         },
         "titleFormatted": {
-          "en": "Activate Instant Mode for [[water_duration]] minutes. Eco mode is [[eco_mode]] using [[on_time]] minute On and [[off_time]] minute off times. At the end the mode will [[revert]]",
-          "de": "Sofort-Modus für [[water_duration]] Minuten aktivieren. Eco-Modus [[eco_mode]] verwendet [[on_time]] Minuten Ein- und [[off_time]] Minuten Ausschaltzeiten. Am Ende wird die Betriebsart [[revert]]",
-          "nl": "Activeer instant modus voor [[water_duration]] minuten. Eco-Modus [[eco_mode]] staat [[on_time]] minuten Aan en [[off_time]] minuten uit. Aan het einde zal modus worden [[revert]]"
+          "en": "Activate Instant Mode for [[water_duration]] minutes with a volume limit of [[volume]] litres. Eco mode is [[eco_mode]] using [[on_time]] minute On and [[off_time]] minute off times. At the end the mode will [[revert]]",
+          "de": "Sofort-Modus für [[water_duration]] Minuten mit einer Volumenbegrenzung von [[volume]] Litern aktivieren. Eco-Modus [[eco_mode]] verwendet [[on_time]] Minuten Ein- und [[off_time]] Minuten Ausschaltzeiten. Am Ende wird die Betriebsart [[revert]]",
+          "nl": "Activeer instant modus voor [[water_duration]] minuten met een volumelimiet van [[volume]] liter. Eco-Modus [[eco_mode]] staat [[on_time]] minuten Aan en [[off_time]] minuten uit. Aan het einde zal modus worden [[revert]]"
         },
         "args": [
           {
@@ -446,6 +446,22 @@
               "en": "Duration",
               "de": "Dauer",
               "nl": "Duratie"
+            }
+          },
+          {
+            "name": "volume",
+            "type": "number",
+            "min": 0,
+            "max": 10000,
+            "placeholder": {
+              "en": "Litres (optional)",
+              "de": "Liter (optional)",
+              "nl": "Liter (optioneel)"
+            },
+            "title": {
+              "en": "Volume Limit",
+              "de": "Volumenbegrenzung",
+              "nl": "Volumelimiet"
             }
           },
           {

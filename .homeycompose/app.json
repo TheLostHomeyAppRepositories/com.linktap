@@ -1,6 +1,6 @@
 {
     "id": "com.linktap",
-    "version": "1.0.33",
+    "version": "1.0.34",
     "compatibility": ">=5.0.0",
     "platforms": [
         "local",

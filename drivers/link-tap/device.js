@@ -24,6 +24,17 @@ class LinkTapDevice extends Homey.Device
         return Math.max(0, limit);
     }
 
+    getActiveWateringVolumeLimitLitres()
+    {
+        const flowLimit = this.toFiniteNumber(this.flowWateringVolumeLimitLitres);
+        if (flowLimit !== undefined)
+        {
+            return Math.max(0, flowLimit);
+        }
+
+        return this.getWateringVolumeLimitLitres();
+    }
+
     getStoredWaterTotalCubicMetres()
     {
         const storedTotal = this.toFiniteNumber(this.waterTotal);
@@ -92,7 +103,7 @@ class LinkTapDevice extends Homey.Device
 
     async stopManualModeForVolumeLimit(currentVolume, source)
     {
-        const limit = this.getWateringVolumeLimitLitres();
+        const limit = this.getActiveWateringVolumeLimitLitres();
         if (limit <= 0)
         {
             return;
@@ -164,6 +175,7 @@ class LinkTapDevice extends Homey.Device
         this.previousWateringMode = null;
         this.gatewayOnlineGraceUntil = 0;
         this.lastFlowActivityAt = 0;
+        this.flowWateringVolumeLimitLitres = undefined;
         this.volumeLimitStopPending = false;
         this.updateRetryTimer = null;
         this.gatewayRecoveryTimer = null;
@@ -755,9 +767,9 @@ class LinkTapDevice extends Homey.Device
         }
     }
 
-    async activateInstantMode(onOff, duration, ecoOption, ecoOn, ecoOff, autoBack)
+    async activateInstantMode(onOff, duration, ecoOption, ecoOn, ecoOff, autoBack, volumeLimitLitres)
     {
-        this.homey.app.updateLog(`activateInstantMode ${onOff}, duration: ${duration}, ecoOption: ${ecoOption}, ecoOn: ${ecoOn}, ecoOff: ${ecoOff}, autoBack: ${autoBack}`);
+        this.homey.app.updateLog(`activateInstantMode ${onOff}, duration: ${duration}, ecoOption: ${ecoOption}, ecoOn: ${ecoOn}, ecoOff: ${ecoOff}, autoBack: ${autoBack}, volumeLimitLitres: ${volumeLimitLitres}`);
 
         const url = 'activateInstantMode';
         const dd = this.getData();
@@ -775,6 +787,11 @@ class LinkTapDevice extends Homey.Device
             body.action = true;
             this.volumeLimitStopPending = false;
 
+            const flowVolumeLimit = this.toFiniteNumber(volumeLimitLitres);
+            this.flowWateringVolumeLimitLitres = (flowVolumeLimit !== undefined)
+                ? Math.max(0, flowVolumeLimit)
+                : undefined;
+
             if (!duration)
             {
                 duration = 5;
@@ -782,7 +799,7 @@ class LinkTapDevice extends Homey.Device
 
             body.duration = duration;
 
-            const volumeLimit = this.getWateringVolumeLimitLitres();
+            const volumeLimit = this.getActiveWateringVolumeLimitLitres();
             const useEcoMode = ecoOption && (volumeLimit <= 0);
             if (ecoOption && !useEcoMode)
             {
@@ -823,6 +840,7 @@ class LinkTapDevice extends Homey.Device
         }
         else
         {
+            this.flowWateringVolumeLimitLitres = undefined;
             this.volumeLimitStopPending = false;
 
             // Cancel watering doesn't generate the 'watering end' webhook event when Eco mode is active so setup a backup to tidy up
@@ -852,6 +870,7 @@ class LinkTapDevice extends Homey.Device
         }
 
         this.homey.app.updateLog('abortWatering');
+        this.flowWateringVolumeLimitLitres = undefined;
         this.volumeLimitStopPending = false;
 
         if (this.timerVolUpdate)
@@ -1100,6 +1119,7 @@ class LinkTapDevice extends Homey.Device
                 else if (event === 'wateringOff')
                 {
                     this.setAvailableLog('processWebhookMessage wateringOff').catch(this.error);
+                    this.flowWateringVolumeLimitLitres = undefined;
                     this.volumeLimitStopPending = false;
                     this.homey.app.updateLog('processWebhookMessage wateringOff treated as plan finished');
                     this.setCapabilityValueLog('water_on', false).catch(this.error);

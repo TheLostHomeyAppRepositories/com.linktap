@@ -58,7 +58,13 @@ class MyApp extends Homey.App
             .registerRunListener(async (args, state) =>
             {
                 this.log('activate_instant_mode');
-                return args.device.activateInstantMode(true, args.water_duration, (args.eco_mode === 'on'), args.on_time, args.off_time, (args.revert === 'on'));
+                return args.device.activateInstantMode(true,
+                    args.water_duration,
+                    (args.eco_mode === 'on'),
+                    args.on_time,
+                    args.off_time,
+                    (args.revert === 'on'),
+                    args.volume);
             });
 
         const turnOffInstantMode = this.homey.flow.getActionCard('turn_off_instant_mode');
