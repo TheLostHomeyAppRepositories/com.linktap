@@ -394,6 +394,26 @@
       },
       {
         "title": {
+          "en": "Freeze alarm !{{is|isn't}} active",
+          "de": "Frostalarm !{{ist|ist nicht}} aktiv",
+          "nl": "Bevriezingsalarm !{{is|is niet}} actief"
+        },
+        "hint": {
+          "en": "This Flow will continue if the freeze alarm is/is not active.",
+          "de": "Dieser Flow wird fortgeführt, wenn der Frostalarm aktiv/nicht aktiv ist.",
+          "nl": "Deze flow gaat verder als het bevriezingsalarm wel/niet actief is."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=link-tap"
+          }
+        ],
+        "id": "alarm_freeze"
+      },
+      {
+        "title": {
           "en": "High-flow alarm !{{is|isn't}} active",
           "de": "Alarm für hohen Wasserdurchfluss !{{ist|ist nicht}} aktiv",
           "nl": "Alarm voor hoge waterstroom !{{is|is niet}} actief"
