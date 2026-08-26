@@ -1,0 +1,19 @@
+{
+    "title": {
+        "en": "No-water alarm !{{is|isn't}} active",
+        "de": "Kein-Wasser-Alarm !{{ist|ist nicht}} aktiv",
+        "nl": "Geen-wateralarm !{{is|is niet}} actief"
+    },
+    "hint": {
+        "en": "This Flow will continue if the no-water alarm is/is not active.",
+        "de": "Dieser Flow wird fortgeführt, wenn der Kein-Wasser-Alarm aktiv/nicht aktiv ist.",
+        "nl": "Deze flow gaat verder als het geen-wateralarm wel/niet actief is."
+    },
+    "args": [
+        {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=link-tap"
+        }
+    ]
+}

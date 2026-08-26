@@ -1,0 +1,19 @@
+{
+    "title": {
+        "en": "Low-flow alarm !{{is|isn't}} active",
+        "de": "Alarm für niedrigen Wasserdurchfluss !{{ist|ist nicht}} aktiv",
+        "nl": "Alarm voor lage waterstroom !{{is|is niet}} actief"
+    },
+    "hint": {
+        "en": "This Flow will continue if the low-flow alarm is/is not active.",
+        "de": "Dieser Flow wird fortgeführt, wenn der Alarm für niedrigen Wasserdurchfluss aktiv/nicht aktiv ist.",
+        "nl": "Deze flow gaat verder als het alarm voor lage waterstroom wel/niet actief is."
+    },
+    "args": [
+        {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=link-tap"
+        }
+    ]
+}

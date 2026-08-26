@@ -394,6 +394,66 @@
       },
       {
         "title": {
+          "en": "High-flow alarm !{{is|isn't}} active",
+          "de": "Alarm für hohen Wasserdurchfluss !{{ist|ist nicht}} aktiv",
+          "nl": "Alarm voor hoge waterstroom !{{is|is niet}} actief"
+        },
+        "hint": {
+          "en": "This Flow will continue if the high-flow alarm is/is not active.",
+          "de": "Dieser Flow wird fortgeführt, wenn der Alarm für hohen Wasserdurchfluss aktiv/nicht aktiv ist.",
+          "nl": "Deze flow gaat verder als het alarm voor hoge waterstroom wel/niet actief is."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=link-tap"
+          }
+        ],
+        "id": "alarm_high_flow"
+      },
+      {
+        "title": {
+          "en": "Low-flow alarm !{{is|isn't}} active",
+          "de": "Alarm für niedrigen Wasserdurchfluss !{{ist|ist nicht}} aktiv",
+          "nl": "Alarm voor lage waterstroom !{{is|is niet}} actief"
+        },
+        "hint": {
+          "en": "This Flow will continue if the low-flow alarm is/is not active.",
+          "de": "Dieser Flow wird fortgeführt, wenn der Alarm für niedrigen Wasserdurchfluss aktiv/nicht aktiv ist.",
+          "nl": "Deze flow gaat verder als het alarm voor lage waterstroom wel/niet actief is."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=link-tap"
+          }
+        ],
+        "id": "alarm_low_flow"
+      },
+      {
+        "title": {
+          "en": "No-water alarm !{{is|isn't}} active",
+          "de": "Kein-Wasser-Alarm !{{ist|ist nicht}} aktiv",
+          "nl": "Geen-wateralarm !{{is|is niet}} actief"
+        },
+        "hint": {
+          "en": "This Flow will continue if the no-water alarm is/is not active.",
+          "de": "Dieser Flow wird fortgeführt, wenn der Kein-Wasser-Alarm aktiv/nicht aktiv ist.",
+          "nl": "Deze flow gaat verder als het geen-wateralarm wel/niet actief is."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=link-tap"
+          }
+        ],
+        "id": "alarm_water"
+      },
+      {
+        "title": {
           "en": "Watering !{{is|isn't}} in progress",
           "de": "Bewässerung !{{ist|ist nicht}} aktiv",
           "nl": "Irrigratie !{{is|is niet}} actief"
