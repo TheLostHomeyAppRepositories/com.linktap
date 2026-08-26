@@ -139,5 +139,8 @@
 	},
 	"1.0.34": {
 		"en": "Add optional volume limit parameter to Activate Instant Mode Flow action card; previously it only accepted duration."
+	},
+	"1.0.35": {
+		"en": "Added support for more Flowalarm conditions."
 	}
 }
