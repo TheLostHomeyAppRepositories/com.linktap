@@ -18,6 +18,21 @@ class LinkTapDriver extends Homey.Driver
         this.wateringFinishedTrigger = this.homey.flow.getDeviceTriggerCard('watering_finished');
         this.wateringSkippedTrigger = this.homey.flow.getDeviceTriggerCard('watering_skipped');
 
+        const conditionCapabilities = {
+            alarm_broken: 'alarm_broken',
+            alarm_fallen: 'alarm_fallen',
+            alarm_freeze: 'alarm_freeze',
+            alarm_high_flow: 'alarm_high_flow',
+            alarm_low_flow: 'alarm_low_flow',
+            alarm_water: 'alarm_water',
+        };
+
+        Object.entries(conditionCapabilities).forEach(([cardId, capabilityId]) =>
+        {
+            this.homey.flow.getConditionCard(cardId)
+                .registerRunListener(args => Boolean(args.device.getCapabilityValue(capabilityId)));
+        });
+
         this.log('LinkTapDriver has been initialized');
     }
 

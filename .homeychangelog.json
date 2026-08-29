@@ -142,5 +142,8 @@
 	},
 	"1.0.35": {
 		"en": "Added support for more Flowalarm conditions."
+	},
+	"1.0.36": {
+		"en": "Registered new Flow condition cards."
 	}
 }
